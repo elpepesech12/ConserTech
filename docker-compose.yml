@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Base de datos (PostgreSQL por defecto para Spring Boot)
+  db:
+    image: postgres:16-alpine
+    container_name: consertech-db
+    restart: always
+    environment:
+      POSTGRES_DB: consertech_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - consertech-net
+
+  # Backend Spring Boot
+  backend:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: consertech-backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/consertech_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+    networks:
+      - consertech-net
+
+  # Frontend Flutter Web
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: consertech-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - consertech-net
+
+volumes:
+  pgdata:
+
+networks:
+  consertech-net:
+    driver: bridge
