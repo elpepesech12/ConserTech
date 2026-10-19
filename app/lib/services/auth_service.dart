@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:8080/api/auth';
+  static const String baseUrl = 'http://localhost:8081/api/auth';
 
   static String? currentToken;
   static String? currentEmail;
