@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'admin/admin_main_layout.dart';
 import '../services/auth_service.dart';
 import '../core/theme/app_colors.dart';
+import '../screens/main_layout.dart';
+import '../screens/admin/admin_main_layout.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,10 +21,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     setState(() => _isLoading = true);
-    final success = await AuthService.login(_emailCtrl.text.trim(), _passCtrl.text.trim());
+    final success = await AuthService.login(
+      _emailCtrl.text.trim(),
+      _passCtrl.text.trim(),
+    );
     setState(() => _isLoading = false);
+
     if (mounted && success) {
-      Navigator.pushReplacementNamed(context, '/home');
+      // Usamos currentRole, tal como está definido en tu auth_service.dart
+      final String role = AuthService.currentRole ?? 'ROLE_CONSERJE';
+
+      // Validamos contra 'ROLE_ADMIN'
+      if (role == 'ROLE_ADMIN') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminMainLayout()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainLayout()),
+        );
+      }
     }
   }
 
@@ -39,7 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.apartment_rounded, color: AppColors.primaryDark, size: 32),
+                  Icon(
+                    Icons.apartment_rounded,
+                    color: AppColors.primaryDark,
+                    size: 32,
+                  ),
                   SizedBox(width: 10),
                   Text(
                     'CONSERTECH',
@@ -77,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.black.withOpacity(0.04),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
-                    )
+                    ),
                   ],
                 ),
                 child: IntrinsicHeight(
@@ -94,48 +119,88 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               const Text(
                                 'Inicio de Sesión',
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textMain),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textMain,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               const Text(
                                 'Ingrese sus credenciales para iniciar su turno',
-                                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 13,
+                                ),
                               ),
                               const SizedBox(height: 22),
-                              const Text('RUT o Correo Electrónico', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                              const Text(
+                                'RUT o Correo Electrónico',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               TextField(
                                 controller: _emailCtrl,
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.person_outline, size: 18),
+                                  prefixIcon: const Icon(
+                                    Icons.person_outline,
+                                    size: 18,
+                                  ),
                                   hintText: 'ejemplo@admin.com',
                                   filled: true,
                                   fillColor: const Color(0xFFF8FAFC),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.borderLight),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              const Text('Contraseña', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                              const Text(
+                                'Contraseña',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               TextField(
                                 controller: _passCtrl,
                                 obscureText: _obscurePass,
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline,
+                                    size: 18,
+                                  ),
                                   suffixIcon: IconButton(
-                                    icon: Icon(_obscurePass ? Icons.visibility_off : Icons.visibility, size: 18),
-                                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                                    icon: Icon(
+                                      _obscurePass
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      size: 18,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _obscurePass = !_obscurePass,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFF8FAFC),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.borderLight),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -145,9 +210,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Checkbox(
                                     value: _rememberMe,
                                     activeColor: AppColors.primaryDark,
-                                    onChanged: (v) => setState(() => _rememberMe = v ?? true),
+                                    onChanged: (v) =>
+                                        setState(() => _rememberMe = v ?? true),
                                   ),
-                                  const Text('Recordar en este equipo', style: TextStyle(fontSize: 12, color: AppColors.textMain)),
+                                  const Text(
+                                    'Recordar en este equipo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textMain,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 14),
@@ -159,14 +231,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primaryDark,
                                     foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                   child: _isLoading
-                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
                                       : const Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Text('Iniciar Turno', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            Text(
+                                              'Iniciar Turno',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                             SizedBox(width: 8),
                                             Icon(Icons.arrow_forward, size: 18),
                                           ],
@@ -194,19 +281,38 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               const Text(
                                 'Contexto de Turno',
-                                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               const Text(
                                 'Información de entrega del turno anterior para el conserje entrante.',
-                                style: TextStyle(color: Colors.white70, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
                               ),
                               const Divider(color: Colors.white24, height: 30),
-                              _buildTurnoRow(Icons.schedule, 'TURNO ACTUAL', 'Nocturno (22:00 - 06:00)'),
+                              _buildTurnoRow(
+                                Icons.schedule,
+                                'TURNO ACTUAL',
+                                'Nocturno (22:00 - 06:00)',
+                              ),
                               const SizedBox(height: 18),
-                              _buildTurnoRow(Icons.badge_outlined, 'ÚLTIMO CONSERJE DE TURNO', 'Carlos Pérez R.'),
+                              _buildTurnoRow(
+                                Icons.badge_outlined,
+                                'ÚLTIMO CONSERJE DE TURNO',
+                                'Carlos Pérez R.',
+                              ),
                               const SizedBox(height: 18),
-                              _buildTurnoRow(Icons.check_circle_outline, 'ÚLTIMA SESIÓN CERRADA', '13/09/2026 - 22:05 hrs'),
+                              _buildTurnoRow(
+                                Icons.check_circle_outline,
+                                'ÚLTIMA SESIÓN CERRADA',
+                                '13/09/2026 - 22:05 hrs',
+                              ),
                               const Spacer(),
                               Container(
                                 padding: const EdgeInsets.all(14),
@@ -216,12 +322,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: AppColors.orange, size: 20),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.orange,
+                                      size: 20,
+                                    ),
                                     SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         'Recuerde verificar el estado de los estacionamientos en el panel principal al iniciar sesión.',
-                                        style: TextStyle(color: Colors.white70, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -259,10 +372,24 @@ class _LoginScreenState extends State<LoginScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 0.8)),
-            Text(val, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+                letterSpacing: 0.8,
+              ),
+            ),
+            Text(
+              val,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
-        )
+        ),
       ],
     );
   }
