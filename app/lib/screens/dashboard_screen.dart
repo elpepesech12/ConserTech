@@ -1,8 +1,71 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
 
-class DashboardScreen extends StatelessWidget {
+import '../core/theme/app_colors.dart';
+import '../services/api_service.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  Map<String, dynamic> _metricasEst = {
+    'total': 120,
+    'disponibles': 45,
+    'ocupados': 68,
+    'mantencion': 7,
+  };
+  List<dynamic> _residentes = [];
+  List<dynamic> _residentesFiltrados = [];
+  bool _isLoading = true;
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    try {
+      final metricas = await ApiService.getMetricasEstacionamientos();
+      final residentes = await ApiService.getResidentes();
+      if (mounted) {
+        setState(() {
+          _metricasEst = metricas;
+          _residentes = residentes;
+          _residentesFiltrados = residentes;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _filtrar(String query) {
+    if (query.trim().isEmpty) {
+      setState(() => _residentesFiltrados = _residentes);
+      return;
+    }
+    final q = query.toLowerCase();
+    setState(() {
+      _residentesFiltrados = _residentes.where((r) {
+        final rut = (r['rut'] ?? '').toString().toLowerCase();
+        final nom = (r['nombre'] ?? '').toString().toLowerCase();
+        final ape = (r['apellido'] ?? '').toString().toLowerCase();
+        final depto = r['departamento'] != null
+            ? (r['departamento']['numero'] ?? '').toString().toLowerCase()
+            : '';
+        return rut.contains(q) ||
+            nom.contains(q) ||
+            ape.contains(q) ||
+            depto.contains(q);
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +83,23 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Dashboard',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textMain),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMain,
+                      ),
                     ),
-                    Text('Resumen operativo y flujo de accesos', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                    Text(
+                      'Resumen operativo y flujo de accesos',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              // Tarjeta Estacionamientos de invitados
+              // Tarjeta Estacionamientos de invitados conectada a BD
               Container(
                 width: 250,
                 padding: const EdgeInsets.all(16),
@@ -34,7 +107,11 @@ class DashboardScreen extends StatelessWidget {
                   color: AppColors.primaryDark,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -42,14 +119,30 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Estacionamientos de invitados',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    _statItem(AppColors.green, 'Estacionamientos disp.', '45'),
+                    _statItem(
+                      AppColors.green,
+                      'Estacionamientos disp.',
+                      '${_metricasEst['disponibles'] ?? 0}',
+                    ),
                     const SizedBox(height: 8),
-                    _statItem(AppColors.red, 'Estacionamientos ocup.', '68'),
+                    _statItem(
+                      AppColors.red,
+                      'Estacionamientos ocup.',
+                      '${_metricasEst['ocupados'] ?? 0}',
+                    ),
                     const SizedBox(height: 8),
-                    _statItem(AppColors.orange, 'Estacionamientos reserv.', '7'),
+                    _statItem(
+                      AppColors.orange,
+                      'Estacionamientos mant./res.',
+                      '${_metricasEst['mantencion'] ?? 0}',
+                    ),
                   ],
                 ),
               ),
@@ -70,15 +163,29 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text('Visitas últimos 30 días', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textMain)),
+                    const Text(
+                      'Visitas últimos 30 días',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.textMain,
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryDark,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(Icons.arrow_drop_down, color: Colors.white, size: 18),
+                      child: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),
@@ -104,7 +211,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Buscador y Tabla de residentes
+          // Buscador de residentes
           Row(
             children: [
               Container(
@@ -114,20 +221,32 @@ class DashboardScreen extends StatelessWidget {
                   border: Border.all(color: AppColors.borderLight),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.filter_list, size: 18, color: AppColors.textMuted),
+                child: const Icon(
+                  Icons.filter_list,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: _filtrar,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
-                    hintText: 'Search...',
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: AppColors.textMuted,
+                    ),
+                    hintText: 'Buscar residente o RUT...',
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderLight,
+                      ),
                     ),
                   ),
                 ),
@@ -136,7 +255,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Tabla
+          // Tabla conectada a BD
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -153,40 +272,59 @@ class DashboardScreen extends StatelessWidget {
                 5: FlexColumnWidth(1.3),
               },
               children: [
-                TableRow(
-                  decoration: const BoxDecoration(
+                const TableRow(
+                  decoration: BoxDecoration(
                     color: Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
                   ),
-                  children: const [
+                  children: [
                     _TH('RUT'),
                     _TH('NOMBRE'),
                     _TH('APELLIDO'),
-                    _TH('TELÉFONO'),
-                    _TH('EDIFICIO'),
-                    _TH('ESTACIONAMIENTO'),
+                    _TH('DEPTO'),
+                    _TH('TORRE'),
+                    _TH('TIPO'),
                   ],
                 ),
-                const TableRow(
-                  children: [
-                    _TD('21.456.345-7'),
-                    _TD('Dante'),
-                    _TD('Castillo'),
-                    _TD('101'),
-                    _TD('101 - A'),
-                    _TD('01'),
-                  ],
-                ),
-                const TableRow(
-                  children: [
-                    _TD('21.456.345-7'),
-                    _TD('Maximiliano'),
-                    _TD('Allendes'),
-                    _TD('204'),
-                    _TD('204 - B'),
-                    _TD('04'),
-                  ],
-                ),
+                if (_isLoading)
+                  const TableRow(
+                    children: [
+                      _TD('Cargando...'),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                    ],
+                  )
+                else if (_residentesFiltrados.isEmpty)
+                  const TableRow(
+                    children: [
+                      _TD('Sin registros'),
+                      _TD('-'),
+                      _TD('-'),
+                      _TD('-'),
+                      _TD('-'),
+                      _TD('-'),
+                    ],
+                  )
+                else
+                  ..._residentesFiltrados.map((r) {
+                    final depto = r['departamento'];
+                    return TableRow(
+                      children: [
+                        _TD(r['rut'] ?? ''),
+                        _TD(r['nombre'] ?? ''),
+                        _TD(r['apellido'] ?? ''),
+                        _TD(depto != null ? (depto['numero'] ?? '') : ''),
+                        _TD(depto != null ? (depto['torre'] ?? '') : ''),
+                        _TD(r['tipoResidente'] ?? 'PROPIETARIO'),
+                      ],
+                    );
+                  }).toList(),
               ],
             ),
           ),
@@ -200,8 +338,20 @@ class DashboardScreen extends StatelessWidget {
       children: [
         CircleAvatar(radius: 4, backgroundColor: dot),
         const SizedBox(width: 8),
-        Expanded(child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11))),
-        Text(val, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+        ),
+        Text(
+          val,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }
@@ -219,7 +369,10 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(day, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        Text(
+          day,
+          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+        ),
       ],
     );
   }
@@ -232,7 +385,14 @@ class _TH extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textMain)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          color: AppColors.textMain,
+        ),
+      ),
     );
   }
 }
@@ -244,7 +404,10 @@ class _TD extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      child: Text(text, style: const TextStyle(fontSize: 12, color: AppColors.textMain)),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: AppColors.textMain),
+      ),
     );
   }
 }

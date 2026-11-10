@@ -1,6 +1,7 @@
 package com.consertech.auth.models;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
@@ -10,16 +11,27 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
+    @Column(length = 150)
     private String nombre;
 
+    @Column(length = 30)
+    private String telefono;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     private Rol rol;
+
+    @Column(nullable = false)
+    private Boolean activo = true;
+
+    @Column(name = "creado_en")
+    private LocalDateTime creadoEn = LocalDateTime.now();
 
     public Usuario() {
     }
@@ -29,10 +41,13 @@ public class Usuario {
         this.password = password;
         this.nombre = nombre;
         this.rol = rol;
+        this.activo = true;
+        this.creadoEn = LocalDateTime.now();
     }
 
     public static Rol resolverRolPorEmail(String email) {
-        if (email == null) return Rol.ROLE_RESIDENTE;
+        if (email == null)
+            return Rol.ROLE_RESIDENTE;
         String emailLower = email.toLowerCase().trim();
         if (emailLower.endsWith("@admin.com") || emailLower.contains("admin@")) {
             return Rol.ROLE_ADMIN;
@@ -42,6 +57,7 @@ public class Usuario {
         return Rol.ROLE_RESIDENTE;
     }
 
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -70,11 +86,35 @@ public class Usuario {
         this.nombre = nombre;
     }
 
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
     public Rol getRol() {
         return rol;
     }
 
     public void setRol(Rol rol) {
         this.rol = rol;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public LocalDateTime getCreadoEn() {
+        return creadoEn;
+    }
+
+    public void setCreadoEn(LocalDateTime creadoEn) {
+        this.creadoEn = creadoEn;
     }
 }

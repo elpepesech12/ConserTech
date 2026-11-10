@@ -1,11 +1,71 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
 
-class EstacionamientosScreen extends StatelessWidget {
+import '../core/theme/app_colors.dart';
+import '../services/api_service.dart';
+
+class EstacionamientosScreen extends StatefulWidget {
   const EstacionamientosScreen({super.key});
 
   @override
+  State<EstacionamientosScreen> createState() => _EstacionamientosScreenState();
+}
+
+class _EstacionamientosScreenState extends State<EstacionamientosScreen> {
+  List<dynamic> _estacionamientos = [];
+  Map<String, dynamic> _metricas = {
+    'total': 120,
+    'disponibles': 45,
+    'ocupados': 68,
+    'mantencion': 7,
+  };
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    try {
+      final list = await ApiService.getEstacionamientos();
+      final metrics = await ApiService.getMetricasEstacionamientos();
+      if (mounted) {
+        setState(() {
+          _estacionamientos = list;
+          _metricas = metrics;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Color _getColorForEstado(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'DISPONIBLE':
+        return AppColors.green;
+      case 'OCUPADO':
+        return AppColors.red;
+      case 'MANTENCION':
+      case 'RESERVADO':
+        return AppColors.orange;
+      default:
+        return AppColors.green;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Tomamos los slots de la BD para los edificios o asignamos según su índice
+    List<String> codigos = _estacionamientos
+        .map((e) => (e['codigo'] ?? '').toString())
+        .toList();
+    List<Color> colores = _estacionamientos
+        .map((e) => _getColorForEstado(e['estado'] ?? 'DISPONIBLE'))
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
       child: Column(
@@ -13,7 +73,11 @@ class EstacionamientosScreen extends StatelessWidget {
         children: [
           const Text(
             'Estacionamientos',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textMain),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textMain,
+            ),
           ),
           const Text(
             'Control de ocupación y asignaciones por edificio',
@@ -21,16 +85,36 @@ class EstacionamientosScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Métricas superiores oscuras (estilo ConserTech)
+          // Métricas superiores oscuras estilo ConserTech conectadas a BD
           Row(
             children: [
-              _metricDark('TOTAL ESTACIONAMIENTOS', '120', null, AppColors.cardDark),
+              _metricDark(
+                'TOTAL ESTACIONAMIENTOS',
+                '${_metricas['total'] ?? 10}',
+                null,
+                AppColors.cardDark,
+              ),
               const SizedBox(width: 12),
-              _metricDark('DISPONIBLES', '45', AppColors.green, AppColors.primaryDark),
+              _metricDark(
+                'DISPONIBLES',
+                '${_metricas['disponibles'] ?? 0}',
+                AppColors.green,
+                AppColors.primaryDark,
+              ),
               const SizedBox(width: 12),
-              _metricDark('OCUPADOS', '68', AppColors.red, AppColors.primaryDark),
+              _metricDark(
+                'OCUPADOS',
+                '${_metricas['ocupados'] ?? 0}',
+                AppColors.red,
+                AppColors.primaryDark,
+              ),
               const SizedBox(width: 12),
-              _metricDark('RESERVADOS', '7', AppColors.orange, AppColors.primaryDark),
+              _metricDark(
+                'MANTENCIÓN / RES.',
+                '${_metricas['mantencion'] ?? 0}',
+                AppColors.orange,
+                AppColors.primaryDark,
+              ),
             ],
           ),
           const SizedBox(height: 22),
@@ -51,19 +135,29 @@ class EstacionamientosScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Plano Visual del Estacionamiento',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textMain),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.textMain,
+                      ),
                     ),
                     Row(
                       children: const [
-                        CircleAvatar(radius: 4, backgroundColor: AppColors.green),
+                        CircleAvatar(
+                          radius: 4,
+                          backgroundColor: AppColors.green,
+                        ),
                         SizedBox(width: 4),
                         Text('Disponible  ', style: TextStyle(fontSize: 11)),
                         CircleAvatar(radius: 4, backgroundColor: AppColors.red),
                         SizedBox(width: 4),
                         Text('Ocupado  ', style: TextStyle(fontSize: 11)),
-                        CircleAvatar(radius: 4, backgroundColor: AppColors.orange),
+                        CircleAvatar(
+                          radius: 4,
+                          backgroundColor: AppColors.orange,
+                        ),
                         SizedBox(width: 4),
-                        Text('Reservado', style: TextStyle(fontSize: 11)),
+                        Text('Mantención', style: TextStyle(fontSize: 11)),
                       ],
                     ),
                   ],
@@ -74,16 +168,44 @@ class EstacionamientosScreen extends StatelessWidget {
                     Expanded(
                       child: _edificioBox(
                         'EDIFICIO 101-A',
-                        ['01', '02', '03', '04', '05', '06'],
-                        [AppColors.red, AppColors.green, AppColors.green, AppColors.orange, AppColors.red, AppColors.green],
+                        _sublist(codigos, 0, 6, [
+                          'V-01',
+                          'V-02',
+                          'V-03',
+                          'V-04',
+                          'V-05',
+                          'V-06',
+                        ]),
+                        _sublist(colores, 0, 6, [
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                        ]),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _edificioBox(
                         'EDIFICIO 101-B',
-                        ['11', '12', '13', '14', '15', '16'],
-                        [AppColors.green, AppColors.orange, AppColors.orange, AppColors.red, AppColors.green, AppColors.green],
+                        _sublist(codigos, 6, 10, [
+                          'V-07',
+                          'V-08',
+                          'V-09',
+                          'V-10',
+                          'V-11',
+                          'V-12',
+                        ]),
+                        _sublist(colores, 6, 10, [
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.green,
+                        ]),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -91,7 +213,14 @@ class EstacionamientosScreen extends StatelessWidget {
                       child: _edificioBox(
                         'EDIFICIO 204-A',
                         ['21', '22', '23', '24', '25', '26'],
-                        [AppColors.red, AppColors.red, AppColors.green, AppColors.green, AppColors.orange, AppColors.red],
+                        [
+                          AppColors.red,
+                          AppColors.red,
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.orange,
+                          AppColors.red,
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -99,7 +228,14 @@ class EstacionamientosScreen extends StatelessWidget {
                       child: _edificioBox(
                         'EDIFICIO 204-B',
                         ['31', '32', '33', '34', '35', '36'],
-                        [AppColors.green, AppColors.green, AppColors.red, AppColors.green, AppColors.red, AppColors.orange],
+                        [
+                          AppColors.green,
+                          AppColors.green,
+                          AppColors.red,
+                          AppColors.green,
+                          AppColors.red,
+                          AppColors.orange,
+                        ],
                       ),
                     ),
                   ],
@@ -119,34 +255,49 @@ class EstacionamientosScreen extends StatelessWidget {
                   border: Border.all(color: AppColors.borderLight),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.filter_list, size: 18, color: AppColors.textMuted),
+                child: const Icon(
+                  Icons.filter_list,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: AppColors.textMuted,
+                    ),
                     hintText: 'Buscar residente o RUT...',
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderLight,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 14),
               ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Asignar Estacionamiento'),
+                onPressed: _cargarDatos,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Actualizar Estado'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
@@ -170,27 +321,104 @@ class EstacionamientosScreen extends StatelessWidget {
                 5: FlexColumnWidth(1.2),
               },
               children: [
-                TableRow(
-                  decoration: const BoxDecoration(
+                const TableRow(
+                  decoration: BoxDecoration(
                     color: Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(10),
                       topRight: Radius.circular(10),
                     ),
                   ),
-                  children: const [
+                  children: [
                     _TH('ESTACIONAMIENTO'),
                     _TH('EDIFICIO'),
                     _TH('RESIDENTE'),
                     _TH('RUT'),
                     _TH('ESTADO'),
-                    _TH('FECHA ASIGNACIÓN'),
+                    _TH('ACCIONES'),
                   ],
                 ),
-                _row('101', '101 - A', 'Dante Castillo', '21.456.345-7', 'Ocupado', AppColors.red, '04 Sep 2026'),
-                _row('104', '101 - A', 'Maximiliano Allendes', '19.876.543-2', 'Reservado', AppColors.orange, '08 Sep 2026'),
-                _row('204', '204 - B', 'Christine Brooks', '20.123.456-9', 'Disponible', AppColors.green, '12 Sep 2026'),
-                _row('208', '204 - B', 'Alvaro Sanhueza', '18.345.987-K', 'Ocupado', AppColors.red, '15 Sep 2026'),
+                if (_isLoading)
+                  const TableRow(
+                    children: [
+                      _TD('Cargando...'),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                      _TD(''),
+                    ],
+                  )
+                else
+                  ..._estacionamientos.map((e) {
+                    final estado = (e['estado'] ?? 'DISPONIBLE').toString();
+                    final color = _getColorForEstado(estado);
+                    return TableRow(
+                      children: [
+                        _TD(e['codigo'] ?? '', isBold: true),
+                        _TD(e['tipo'] ?? 'VISITA'),
+                        _TD('Sector Visitas'),
+                        _TD('-'),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 8,
+                          ),
+                          child: Chip(
+                            label: Text(
+                              estado,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            backgroundColor: color.withOpacity(0.1),
+                            padding: EdgeInsets.zero,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(
+                            Icons.more_horiz,
+                            size: 16,
+                            color: AppColors.textMuted,
+                          ),
+                          onSelected: (val) async {
+                            await ApiService.cambiarEstadoEstacionamiento(
+                              e['id'],
+                              val,
+                            );
+                            _cargarDatos();
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'DISPONIBLE',
+                              child: Text(
+                                'Disponible',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'OCUPADO',
+                              child: Text(
+                                'Ocupado',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'MANTENCION',
+                              child: Text(
+                                'Mantención',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }).toList(),
               ],
             ),
           ),
@@ -199,43 +427,23 @@ class EstacionamientosScreen extends StatelessWidget {
     );
   }
 
-  static TableRow _row(
-    String est,
-    String edif,
-    String res,
-    String rut,
-    String estado,
-    Color color,
-    String fecha,
-  ) {
-    return TableRow(
-      children: [
-        _TD(est, isBold: true),
-        _TD(edif),
-        _TD(res),
-        _TD(rut),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          child: Chip(
-            label: Text(
-              estado,
-              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-            ),
-            backgroundColor: color.withOpacity(0.1),
-            padding: EdgeInsets.zero,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-        _TD(fecha),
-      ],
-    );
+  List<T> _sublist<T>(List<T> list, int start, int end, List<T> fallback) {
+    if (list.length >= end) {
+      return list.sublist(start, end);
+    } else if (list.length > start) {
+      return list.sublist(start);
+    }
+    return fallback;
   }
 
   Widget _metricDark(String label, String value, Color? dotColor, Color bg) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -248,7 +456,11 @@ class EstacionamientosScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -256,7 +468,11 @@ class EstacionamientosScreen extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -277,13 +493,17 @@ class EstacionamientosScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.textMuted),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+              color: AppColors.textMuted,
+            ),
           ),
           const SizedBox(height: 8),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: 6,
+            itemCount: slots.length > 6 ? 6 : slots.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               childAspectRatio: 1.4,
@@ -294,12 +514,18 @@ class EstacionamientosScreen extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: colors[i], width: 1.5),
+                border: Border.all(
+                  color: i < colors.length ? colors[i] : AppColors.green,
+                  width: 1.5,
+                ),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 slots[i],
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
           ),
@@ -319,7 +545,11 @@ class _TH extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Text(
         t,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textMain),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          color: AppColors.textMain,
+        ),
       ),
     );
   }
