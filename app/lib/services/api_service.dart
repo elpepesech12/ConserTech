@@ -101,4 +101,37 @@ class ApiService {
     );
     return res.statusCode == 200;
   }
+
+  // --- ADMINISTRACIÓN DE USUARIOS ---
+
+  static Future<List<dynamic>> getUsuarios() async {
+    final res = await http.get(Uri.parse('$baseUrl/usuarios'));
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+
+    return [];
+  }
+
+  static Future<bool> cambiarEstadoUsuario(int id, bool activo) async {
+    final uri = Uri.parse('$baseUrl/usuarios/$id/estado')
+        .replace(queryParameters: {'activo': activo.toString()});
+
+    final res = await http.put(uri);
+
+    return res.statusCode == 200;
+  }
+
+  // --- BITÁCORA ---
+
+  static Future<List<dynamic>> getBitacora() async {
+    final res = await http.get(Uri.parse('$baseUrl/bitacora'));
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+
+    return [];
+  }
 }

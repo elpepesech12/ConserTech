@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'admin_dashboard_screen.dart';
 import 'admin_usuarios_screen.dart';
 import '../login_screen.dart';
 import '../../services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
+import 'admin_bitacora_screen.dart';
 
 class AdminMainLayout extends StatefulWidget {
   const AdminMainLayout({super.key});
@@ -19,6 +21,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   final List<Widget> _screens = [
     const AdminDashboardScreen(),
     const AdminUsuariosScreen(),
+    const AdminBitacoraScreen(),
   ];
 
   @override
@@ -29,9 +32,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
           // Menú lateral izquierdo
           _buildAdminSidebar(),
           // Contenedor principal derecho (cambia según el menú)
-          Expanded(
-            child: _screens[_selectedIndex],
-          ),
+          Expanded(child: _screens[_selectedIndex]),
         ],
       ),
     );
@@ -48,21 +49,34 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
           const SizedBox(height: 10),
           const Text(
             'ADMINISTRACIÓN',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 40),
           _buildNavItem(Icons.dashboard, 'Dashboard', 0),
           _buildNavItem(Icons.people, 'Gestión de Personal', 1),
+          _buildNavItem(Icons.menu_book_outlined, 'Bitácora', 2),
+
           const Spacer(),
           const Divider(color: Colors.white24),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Cerrar Sesión',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             onTap: () {
               AuthService.logout();
               Navigator.pushReplacement(
-                context, 
-                MaterialPageRoute(builder: (context) => const LoginScreen())
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
           ),
@@ -77,11 +91,11 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     return ListTile(
       leading: Icon(icon, color: isSelected ? Colors.white : Colors.white54),
       title: Text(
-        title, 
+        title,
         style: TextStyle(
           color: isSelected ? Colors.white : Colors.white54,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        )
+        ),
       ),
       selected: isSelected,
       selectedTileColor: Colors.white.withOpacity(0.1),
